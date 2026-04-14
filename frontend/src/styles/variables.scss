@@ -1,0 +1,51 @@
+:root {
+  --hr-primary: #409eff;
+  --hr-primary-hover: #66b1ff;
+  --hr-primary-active: #337ecc;
+  --hr-success: #67c23a;
+  --hr-warning: #e6a23c;
+  --hr-danger: #f56c6c;
+  --hr-info: #909399;
+  --hr-bg: #f8f9fa;
+  --hr-surface: #ffffff;
+  --hr-surface-soft: #f6faff;
+  --hr-border: #e4e7ed;
+  --hr-title: #303133;
+  --hr-text: #606266;
+  --hr-placeholder: #c0c4cc;
+  --hr-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  --hr-shadow-soft: 0 8px 32px rgba(64, 158, 255, 0.08);
+  --hr-radius: 8px;
+  --hr-gap: 16px;
+  font-family: 'Microsoft YaHei', 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: linear-gradient(180deg, #f8f9fa 0%, #eef4ff 100%);
+  color: var(--hr-text);
+  font-size: 14px;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}

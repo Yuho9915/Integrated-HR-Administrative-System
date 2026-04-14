@@ -1,0 +1,46 @@
+# 依赖目录
+node_modules/
+dist/
+build/
+output/
+
+# 环境变量文件（核心，禁止提交）
+.env
+.env.*
+!.env.example
+
+# 密钥与证书
+*.pem
+*.key
+*.crt
+*.pfx
+*.p12
+
+# 日志与临时文件
+*.log
+logs/
+tmp/
+temp/
+
+# 编辑器配置
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 不上传产品文档（保留 README.md）
+产品需求文档.mdc
+架构设计文档.mdc
+美术需求文档.mdc
+测试文档.md
+面试交付包.md
+
+# 不上传 SDD / Spec Kit / Agent 流程内容
+.specify/
+.agents/
+spec-kit-0.6.1/
+AI功能/
