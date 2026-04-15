@@ -122,13 +122,22 @@ class LeavePayload(BaseModel):
     reason: str
 
 
-class PerformanceCheckPayload(BaseModel):
+class SupplementPayload(BaseModel):
+    employee_no: str
+    date: str
+    time: str
+    reason: str
     cycle: str
     records: list[dict]
 
 
 class PayrollCalculatePayload(BaseModel):
     month: str
+
+
+class PerformanceCheckPayload(BaseModel):
+    cycle: str = Field(..., min_length=1)
+    records: list[dict] = Field(default_factory=list)
 
 
 class AssetPayload(BaseModel):

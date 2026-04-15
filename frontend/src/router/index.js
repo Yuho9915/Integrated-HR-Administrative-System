@@ -4,6 +4,7 @@ import MainLayout from '@/layout/MainLayout.vue';
 import LoginView from '@/views/LoginView.vue';
 
 import EmployeeProfileView from '@/views/employee/EmployeeProfileView.vue';
+import EmployeeArchiveView from '@/views/employee/EmployeeArchiveView.vue';
 import EmployeeAttendanceView from '@/views/employee/EmployeeAttendanceView.vue';
 import EmployeePayrollView from '@/views/employee/EmployeePayrollView.vue';
 import EmployeePerformanceView from '@/views/employee/EmployeePerformanceView.vue';
@@ -47,7 +48,8 @@ const routes = [
     path: '/',
     component: MainLayout,
     children: [
-      { path: 'employee/profile', component: EmployeeProfileView, meta: { role: 'employee', title: '个人中心', description: '员工查看个人档案、待办与通知。' } },
+      { path: 'employee/profile', component: EmployeeProfileView, meta: { role: 'employee', title: '个人中心', description: '员工查看待办、通知与个人工作台信息。' } },
+      { path: 'employee/archive', component: EmployeeArchiveView, meta: { role: 'employee', title: '个人档案', description: '查看员工基础身份、任职信息与档案材料状态。' } },
       { path: 'employee/attendance', component: EmployeeAttendanceView, meta: { role: 'employee', title: '考勤查询', description: '查询月度出勤、迟到早退与请假记录。' } },
       { path: 'employee/payroll', component: EmployeePayrollView, meta: { role: 'employee', title: '工资查询', description: '查看工资条、发放状态与导出。' } },
       { path: 'employee/performance', component: EmployeePerformanceView, meta: { role: 'employee', title: '绩效查询', description: '查看绩效成绩、等级与历史趋势。' } },

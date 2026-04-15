@@ -41,6 +41,7 @@ export const iconRegistry = {
 export const roleMenus = {
   employee: [
     { path: '/employee/profile', label: '个人中心', icon: 'User' },
+    { path: '/employee/archive', label: '个人档案', icon: 'Postcard' },
     { path: '/employee/attendance', label: '考勤查询', icon: 'Clock' },
     { path: '/employee/payroll', label: '工资查询', icon: 'Wallet' },
     { path: '/employee/performance', label: '绩效查询', icon: 'TrendCharts' },

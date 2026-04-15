@@ -57,21 +57,44 @@ export const useAppStore = defineStore('app', {
           status: result.data.status,
           phone: result.data.phone,
           email: result.data.email,
+          gender: result.data.gender,
+          birthDate: result.data.birth_date,
+          ethnicity: result.data.ethnicity,
+          education: result.data.education,
+          graduateSchool: result.data.graduate_school,
+          major: result.data.major,
+          jobLevel: result.data.job_level,
+          reportTo: result.data.report_to,
+          workLocation: result.data.work_location,
+          probationEndDate: result.data.probation_end_date,
+          contractType: result.data.contract_type,
+          contractSignDate: result.data.contract_sign_date,
+          contractEndDate: result.data.contract_end_date,
+          currentAddress: result.data.current_address,
+          emergencyContact: result.data.emergency_contact,
+          emergencyContactPhone: result.data.emergency_contact_phone,
+          idCardAttachments: result.data.id_card_attachments || [],
+          educationCertificateAttachments: result.data.education_certificate_attachments || [],
+          laborContractAttachments: result.data.labor_contract_attachments || [],
+          medicalReportAttachments: result.data.medical_report_attachments || [],
         };
         localStorage.setItem(storageKey, JSON.stringify(this.user));
       }
       return this.user;
     },
     async logout() {
-      if (this.refreshToken) {
-        await logoutApi({ refresh_token: this.refreshToken });
+      try {
+        if (this.refreshToken) {
+          await logoutApi({ refresh_token: this.refreshToken });
+        }
+      } finally {
+        this.user = null;
+        this.token = '';
+        this.refreshToken = '';
+        localStorage.removeItem(tokenKey);
+        localStorage.removeItem(refreshTokenKey);
+        localStorage.removeItem(storageKey);
       }
-      this.user = null;
-      this.token = '';
-      this.refreshToken = '';
-      localStorage.removeItem(tokenKey);
-      localStorage.removeItem(refreshTokenKey);
-      localStorage.removeItem(storageKey);
     },
   },
 });

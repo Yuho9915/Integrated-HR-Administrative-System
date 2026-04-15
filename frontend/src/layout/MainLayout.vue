@@ -29,14 +29,14 @@
         </div>
         <div class="topbar__info">
           <el-tag v-if="showDevMockBadge" type="warning" effect="dark">DEV MOCK</el-tag>
-          <el-tag type="info">{{ store.user.department }}</el-tag>
+          <el-tag type="info">{{ currentUser.department }}</el-tag>
           <el-tag type="success">{{ roleLabel }}</el-tag>
           <el-dropdown>
             <div class="user-chip">
-              <el-avatar>{{ store.user.name.slice(0, 1) }}</el-avatar>
+              <el-avatar>{{ currentUser.name.slice(0, 1) }}</el-avatar>
               <div>
-                <strong>{{ store.user.name }}</strong>
-                <p>{{ store.user.position }}</p>
+                <strong>{{ currentUser.name }}</strong>
+                <p>{{ currentUser.position }}</p>
               </div>
             </div>
             <template #dropdown>
@@ -75,11 +75,20 @@ const breadcrumbItems = computed(() => {
   return title ? ['首页', title] : ['首页'];
 });
 
-const roleLabel = computed(() => ROLE_MAP[store.user.role] || '访客');
+const roleLabel = computed(() => ROLE_MAP[store.user?.role] || '访客');
+const currentUser = computed(() => ({
+  name: store.user?.name || '访客',
+  department: store.user?.department || '未分配部门',
+  position: store.user?.position || '未分配岗位',
+}));
 const showDevMockBadge = import.meta.env.DEV && import.meta.env.VITE_FORCE_REMOTE_API !== 'true';
 
 const logout = async () => {
-  await store.logout();
+  try {
+    await store.logout();
+  } catch {
+    // ignore and proceed to local logout redirect
+  }
   router.push('/login');
 };
 

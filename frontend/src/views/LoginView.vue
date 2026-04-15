@@ -151,6 +151,8 @@ const submit = async () => {
     persistRememberState();
     ElMessage.success('登录成功');
     router.push(store.homePath);
+  } catch {
+    // message handled globally by request interceptor
   } finally {
     loading.value = false;
   }

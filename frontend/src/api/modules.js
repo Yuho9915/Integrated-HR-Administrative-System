@@ -17,6 +17,8 @@ export const importAttendanceFile = (formData) => request.post('/attendance/impo
 
 export const getLeaves = () => request.get('/leaves');
 export const createLeave = (payload) => request.post('/leaves', payload);
+export const getSupplements = () => request.get('/supplements');
+export const createSupplement = (payload) => request.post('/supplements', payload);
 
 export const getAssistantHealth = () => request.get('/ai/health');
 export const askAssistant = (payload) => request.post('/ai/chat', payload);

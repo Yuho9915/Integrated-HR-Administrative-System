@@ -162,6 +162,12 @@ def _next_leave_status(level: str) -> str:
 def _sync_leave_status(repository, row: dict, status: str, user: dict):
     if not row.get('source_id') or row.get('category') != '人事审批':
         return
+    if row.get('type') == '补卡申请':
+        supplement_row = repository.get('supplements', row['source_id'])
+        if not supplement_row:
+            return
+        repository.upsert('supplements', {**supplement_row, 'status': status, 'approver': user['username']})
+        return
     leave_row = repository.get('leaves', row['source_id'])
     if not leave_row:
         return
