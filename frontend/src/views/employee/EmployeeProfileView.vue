@@ -6,30 +6,18 @@
       <MetricCard title="当前绩效" :value="profile.currentPerformance" tip="本月待最终发布" icon="绩" />
     </div>
 
-    <div class="two-column home-main-grid">
-      <PageCard title="待办事项" description="需员工本人尽快处理的任务提醒。">
-        <div class="todo-list">
-          <button v-for="item in profile.todos" :key="item.title" type="button" class="todo-item" @click="go(item.path, item.query)">
-            <div class="todo-item__time">{{ item.when }}</div>
-            <div class="todo-item__main">
-              <strong>{{ item.title }}</strong>
-              <p>{{ item.desc }}</p>
-            </div>
-            <span class="todo-item__action">去处理</span>
-          </button>
-        </div>
-      </PageCard>
-
-      <PageCard title="常用入口" description="进入高频使用的员工模块。">
-        <div class="quick-grid">
-          <button v-for="item in quickLinks" :key="item.title" type="button" class="quick-card" @click="go(item.path)">
-            <div class="quick-card__icon">{{ item.icon }}</div>
+    <PageCard title="待办事项" description="需员工本人尽快处理的任务提醒。">
+      <div class="todo-list">
+        <button v-for="item in profile.todos" :key="item.title" type="button" class="todo-item" @click="go(item.path, item.query)">
+          <div class="todo-item__time">{{ item.when }}</div>
+          <div class="todo-item__main">
             <strong>{{ item.title }}</strong>
             <p>{{ item.desc }}</p>
-          </button>
-        </div>
-      </PageCard>
-    </div>
+          </div>
+          <span class="todo-item__action">去处理</span>
+        </button>
+      </div>
+    </PageCard>
 
     <PageCard title="公告通知" description="公司与部门公告统一收口。">
       <div class="notice-list">
@@ -59,13 +47,6 @@ const go = (path, query = undefined) => {
   router.push(query ? { path, query } : path);
 };
 
-const quickLinks = [
-  { title: '个人档案', desc: '查看并维护个人基础档案与材料状态。', path: '/employee/archive', icon: '档' },
-  { title: '考勤查询', desc: '查看月度出勤、缺卡与加班记录。', path: '/employee/attendance', icon: '勤' },
-  { title: '工资查询', desc: '查看历史工资条与导出记录。', path: '/employee/payroll', icon: '薪' },
-  { title: '申请中心', desc: '提交请假、补卡和行政相关申请。', path: '/employee/applications', icon: '办' },
-];
-
 const profile = computed(() => ({
   annualLeave: 6,
   attendanceRate: '97.6%',
@@ -90,21 +71,14 @@ const profile = computed(() => ({
 }
 
 .home-grid,
-.home-main-grid,
 .todo-list,
-.notice-list,
-.quick-grid {
+.notice-list {
   display: grid;
   gap: 12px;
 }
 
-.quick-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
 .todo-item,
-.notice-card,
-.quick-card {
+.notice-card {
   border: 1px solid rgba(64, 158, 255, 0.08);
   background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
   border-radius: 16px;
@@ -122,8 +96,7 @@ const profile = computed(() => ({
   transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
 }
 
-.todo-item:hover,
-.quick-card:hover {
+.todo-item:hover {
   transform: translateY(-1px);
   border-color: rgba(64, 158, 255, 0.24);
   box-shadow: 0 12px 24px rgba(64, 158, 255, 0.08);
@@ -137,38 +110,16 @@ const profile = computed(() => ({
 }
 
 .todo-item__main strong,
-.notice-card strong,
-.quick-card strong {
+.notice-card strong {
   color: var(--hr-title);
 }
 
 .todo-item__main p,
-.notice-card p,
-.quick-card p {
+.notice-card p {
   margin: 0;
   color: var(--hr-info);
   line-height: 1.7;
   font-size: 12px;
-}
-
-.quick-card {
-  padding: 16px;
-  display: grid;
-  gap: 8px;
-  text-align: left;
-  cursor: pointer;
-  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
-}
-
-.quick-card__icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 12px;
-  display: grid;
-  place-items: center;
-  color: #fff;
-  font-weight: 700;
-  background: linear-gradient(135deg, #4c8dff, #2ecf8f);
 }
 
 .notice-card {
@@ -190,7 +141,6 @@ const profile = computed(() => ({
 }
 
 @media (max-width: 767px) {
-  .quick-grid,
   .todo-item,
   .notice-card__meta {
     grid-template-columns: 1fr;

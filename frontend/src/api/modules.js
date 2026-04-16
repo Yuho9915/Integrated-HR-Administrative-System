@@ -4,6 +4,7 @@ export const loginApi = (payload) => request.post('/auth/login', payload);
 export const refreshTokenApi = (payload) => request.post('/auth/refresh', payload);
 export const logoutApi = (payload) => request.post('/auth/logout', payload);
 export const getCurrentUser = () => request.get('/auth/me');
+export const verifyPasswordApi = (payload) => request.post('/auth/verify-password', payload);
 
 export const getDashboardSummary = () => request.get('/dashboard/summary');
 export const getAttendanceOverview = () => request.get('/attendance/overview');
@@ -36,6 +37,7 @@ export const getEmployeeAttachment = (employeeId, field, index) => request.get(`
 export const downloadEmployeeAttachment = (employeeId, field, index) => request.get(`/employees/${employeeId}/attachments/${field}/${index}/download`, { responseType: 'blob', skipAuthRedirect: true });
 export const createEmployee = (payload) => request.post('/employees', payload);
 export const updateEmployee = (id, payload) => request.put(`/employees/${id}`, payload);
+export const updateMyArchive = (payload) => request.put('/employees/self/archive', payload);
 export const deleteEmployee = (id) => request.delete(`/employees/${id}`);
 
 export const getPerformanceList = (params) => request.get('/performance/list', { params });
@@ -70,3 +72,9 @@ export const batchDecideApproval = (payload) => request.post('/approvals/batch-d
 export const getReportsSummary = () => request.get('/reports/summary');
 export const getAdministrationSummary = () => request.get('/administration/summary');
 export const createAsset = (payload) => request.post('/administration/assets', payload);
+export const getOfficeSupplyRequests = () => request.get('/administration/office-supply-requests');
+export const createOfficeSupplyRequest = (payload) => request.post('/administration/office-supply-requests', payload);
+export const getAssetRequests = () => request.get('/administration/asset-requests');
+export const createAssetRequest = (payload) => request.post('/administration/asset-requests', payload);
+export const getGeneralRequests = () => request.get('/administration/general-requests');
+export const createGeneralRequest = (payload) => request.post('/administration/general-requests', payload);

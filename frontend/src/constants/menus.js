@@ -46,7 +46,6 @@ export const roleMenus = {
     { path: '/employee/payroll', label: '工资查询', icon: 'Wallet' },
     { path: '/employee/performance', label: '绩效查询', icon: 'TrendCharts' },
     { path: '/employee/applications', label: '申请中心', icon: 'Promotion' },
-    { path: '/employee/assistant', label: 'AI问答', icon: 'ChatDotRound' },
   ],
   manager: [
     { path: '/manager/performance-entry', label: '绩效录入', icon: 'Notebook' },

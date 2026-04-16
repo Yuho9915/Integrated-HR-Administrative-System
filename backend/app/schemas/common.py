@@ -17,6 +17,10 @@ class RefreshTokenRequest(BaseModel):
     refresh_token: str
 
 
+class VerifyPasswordRequest(BaseModel):
+    password: str = Field(..., min_length=1)
+
+
 class AIChatRequest(BaseModel):
     prompt: str = Field(..., min_length=1)
     system_context: str | None = None
@@ -74,6 +78,7 @@ class EmployeePayload(BaseModel):
     job_level: str = ''
     report_to: str = ''
     work_location: str = ''
+    photo_attachment: dict = {}
     id_card_attachments: list[dict] = []
     education_certificate_attachments: list[dict] = []
     labor_contract_attachments: list[dict] = []
@@ -145,6 +150,39 @@ class AssetPayload(BaseModel):
     type: str
     owner: str
     status: str
+
+
+class OfficeSupplyRequestPayload(BaseModel):
+    employee_no: str
+    item_name: str
+    quantity: int = Field(..., ge=1)
+    reason: str = Field(..., min_length=1)
+    needed_by: str = ''
+
+
+class AssetRequestPayload(BaseModel):
+    employee_no: str
+    request_type: str
+    asset_code: str = ''
+    asset_name: str
+    quantity: int = Field(..., ge=1)
+    reason: str = Field(..., min_length=1)
+    needed_by: str = ''
+
+
+class GeneralRequestPayload(BaseModel):
+    employee_no: str
+    request_type: str
+    title: str = ''
+    resource_code: str = ''
+    resource_name: str = ''
+    quantity: int = Field(default=1, ge=1)
+    start_at: str = ''
+    end_at: str = ''
+    days: float = 0
+    needed_by: str = ''
+    reason: str = Field(..., min_length=1)
+    meta: dict = Field(default_factory=dict)
 
 
 class ResumeParsePayload(BaseModel):

@@ -31,6 +31,45 @@ DEFAULT_DATA = {
         {'id': 'user-boss', 'username': 'boss', 'password': '123456', 'name': '赵启明', 'role': 'boss', 'department': '总经办', 'employeeNo': 'CEO-0001', 'position': '总经理'},
     ],
     'employees': [
+        {
+            'id': 'emp-employee-1024',
+            'employee_no': 'EMP-1024',
+            'name': '陈晓雨',
+            'department': '市场部',
+            'position': '招商主管',
+            'role': 'employee',
+            'salary_base': 9000,
+            'performance_base': 1800,
+            'hire_date': '2025-01-15',
+            'resignation_date': '',
+            'status': '在职',
+            'id_card_no': '310101199501011234',
+            'phone': '13800001234',
+            'email': 'emp1024@yuhohr.local',
+            'probation_end_date': '2025-04-15',
+            'emergency_contact': '家属联系人',
+            'emergency_contact_phone': '13900002000',
+            'political_status': '群众',
+            'gender': '女',
+            'birth_date': '1995-01-01',
+            'registered_address': '上海市浦东新区',
+            'current_address': '示例居住地址',
+            'ethnicity': '汉族',
+            'education': '本科',
+            'graduate_school': '示例大学',
+            'major': '市场营销',
+            'contract_type': '固定期限劳动合同',
+            'contract_sign_date': '2025-01-01',
+            'contract_end_date': '2027-12-31',
+            'social_security_base': 6200,
+            'housing_fund_base': 3200,
+            'bank_account': '6222000000001024',
+            'bank_name': '招商银行上海分行',
+            'job_level': 'P3',
+            'report_to': '市场部负责人',
+            'work_location': '总部办公区',
+            **build_attachments('EMP-1024'),
+        },
         {'id': 'emp-1', 'employee_no': 'HR-0001', 'name': '于浩', 'department': '综合管理部', 'position': '人事行政专员', 'role': 'hr', 'salary_base': 12000, 'performance_base': 2000, 'hire_date': '2024-01-01', 'resignation_date': '', 'status': '在职', 'id_card_no': '110101199001011234', 'phone': '13800000001', 'email': 'yuhao@hr.local', 'probation_end_date': '2024-04-01', 'emergency_contact': '于母', 'emergency_contact_phone': '13800001001', 'political_status': '中共党员', 'gender': '男', 'birth_date': '1990-01-01', 'registered_address': '北京市朝阳区', 'current_address': '北京市海淀区', 'ethnicity': '汉族', 'education': '本科', 'graduate_school': '中国人民大学', 'major': '人力资源管理', 'contract_type': '固定期限', 'contract_sign_date': '2024-01-01', 'contract_end_date': '2027-01-01', 'social_security_base': 12000, 'housing_fund_base': 12000, 'bank_account': '6222000000000001', 'bank_name': '招商银行北京分行', 'job_level': 'P4', 'report_to': '赵启明', 'work_location': '北京总部', 'id_card_attachments': [], 'education_certificate_attachments': [], 'labor_contract_attachments': [], 'medical_report_attachments': []},
         {'id': 'emp-2', 'employeeNo': 'DEV-0008', 'name': '张琳', 'department': '产品技术部', 'position': '前端工程师', 'role': 'employee', 'salary_base': 15000, 'performance_base': 3000, 'hire_date': '2024-03-12', 'resignation_date': '', 'political_status': '群众', 'status': '在职'},
         {'id': 'emp-3', 'employeeNo': 'OPS-1003', 'name': '周峰', 'department': '运营中心', 'position': '招商主管', 'role': 'employee', 'salary_base': 9800, 'performance_base': 1500, 'hire_date': '2025-05-10', 'resignation_date': '', 'political_status': '共青团员', 'status': '试用'},
@@ -150,9 +189,25 @@ def _should_refresh_leaves(repository) -> bool:
     return any(str(item.get('employeeNo') or item.get('employee_no') or '').strip() in legacy_employee_nos for item in leaves)
 
 
+def _should_refresh_employees(repository) -> bool:
+    employees = repository.list('employees')
+    if not employees:
+        return False
+    required_employee_nos = {'EMP-1024', 'HR-0001'}
+    existing_employee_nos = {
+        str(item.get('employee_no') or item.get('employeeNo') or '').strip()
+        for item in employees
+    }
+    return not required_employee_nos.issubset(existing_employee_nos)
+
+
 def seed_data() -> None:
     repository = get_repository()
     for resource, items in DEFAULT_DATA.items():
+        if resource == 'employees':
+            if _should_refresh_employees(repository):
+                _replace_resource(repository, resource, items)
+                continue
         if resource == 'attendance':
             if _should_refresh_attendance(repository):
                 _replace_resource(repository, resource, items)

@@ -56,7 +56,7 @@ import { ElMessage } from 'element-plus';
 import { persistApprovedAssetRequest } from '@/utils/assetApprovalSync';
 import PageCard from '@/components/PageCard.vue';
 import { batchDecideApproval,decideApproval,getApprovalDetail,getApprovalOverview } from '@/api/modules';
-const PAGE_SIZE=10,TABLE_HEIGHT='calc(100vh - 320px)',statusOptions=['待审批','已通过','已驳回','已撤销'],typeOptions=['请假','加班','补卡','转正','调岗','离职','薪酬异动','办公用品领用'];
+const PAGE_SIZE=10,TABLE_HEIGHT='calc(100vh - 320px)',statusOptions=['待审批','已通过','已驳回','已撤销'],typeOptions=['请假','加班','补卡','转正','调岗','离职','薪酬异动','办公用品领用','资产领用','办公设备领用','公章使用','会议室申请','会议室预约','用车申请'];
 const STATUS_SORT_ORDER = { '待审批': 0, '已通过': 1, '已驳回': 2, '已撤销': 3 };
 const loading=ref(false),rows=ref([]),currentPage=ref(1),statusFilter=ref(''),typeFilter=ref(''),selectedRows=ref([]),tableRef=ref(),detailVisible=ref(false),detailLoading=ref(false),detailRecord=ref(null),decisionVisible=ref(false),batchVisible=ref(false);
 const decisionForm=ref({row:null,decision:'已通过',comment:''}),batchForm=ref({decision:'已通过',comment:''});

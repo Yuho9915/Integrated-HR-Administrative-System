@@ -53,6 +53,8 @@
         <router-view />
       </main>
     </section>
+
+    <FloatingAIAssistant v-if="showFloatingAI" />
   </div>
 </template>
 
@@ -61,6 +63,7 @@ import { computed, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import AppBreadcrumb from '@/components/layout/AppBreadcrumb.vue';
+import FloatingAIAssistant from '@/components/layout/FloatingAIAssistant.vue';
 import { iconRegistry } from '@/constants/menus';
 import { ROLE_MAP } from '@/constants/roles';
 import { useAppStore } from '@/stores/app';
@@ -82,6 +85,7 @@ const currentUser = computed(() => ({
   position: store.user?.position || '未分配岗位',
 }));
 const showDevMockBadge = import.meta.env.DEV && import.meta.env.VITE_FORCE_REMOTE_API !== 'true';
+const showFloatingAI = computed(() => Boolean(store.user));
 
 const logout = async () => {
   try {

@@ -10,12 +10,14 @@ from app.repositories.factory import get_repository
 from app.schemas.common import DepartmentPayload, EmployeePayload, PositionPayload
 from app.security.auth import require_roles
 from app.services.ai_service import AIService
+from app.services.seed import DEFAULT_DATA
 from app.utils.responses import ok
 
 router = APIRouter(prefix='/employees', tags=['employees'])
 ai_service = AIService()
 UNIQUE_FIELDS = {'id_card_no': '身份证号', 'phone': '手机号', 'email': '邮箱'}
 ATTACHMENT_FIELDS = {
+    'photo_attachment': '员工证件照',
     'id_card_attachments': '身份证附件',
     'education_certificate_attachments': '学历证书',
     'labor_contract_attachments': '劳动合同',
@@ -55,12 +57,64 @@ def _get_attachment(employee: dict, field: str, index: int):
     return attachment
 
 
+def _resolve_employee_by_identifier(repository, identifier: str) -> dict | None:
+    target = str(identifier or '').strip()
+    if not target:
+        return None
+    employee = repository.get('employees', target)
+    if employee:
+        return employee
+    return next(
+        (
+            item for item in repository.list('employees')
+            if str(item.get('employee_no') or item.get('employeeNo') or '').strip() == target
+        ),
+        None,
+    )
+
+
 def _ensure_employee_scope(user: dict, employee: dict):
     if user['role'] in ['hr', 'manager', 'boss']:
         return
-    if user['role'] == 'employee' and user['username'] == 'employee' and employee.get('employee_no') == 'EMP-1024':
+    if user['role'] == 'employee' and user['username'] == 'employee' and str(employee.get('employee_no') or employee.get('employeeNo') or '').strip() == 'EMP-1024':
         return
     raise HTTPException(status_code=403, detail='当前角色无访问权限')
+
+
+def _build_employee_self_update_payload(current: dict, payload: EmployeePayload) -> dict:
+    editable_fields = {
+        'gender': payload.gender,
+        'birth_date': payload.birth_date,
+        'ethnicity': payload.ethnicity,
+        'education': payload.education,
+        'graduate_school': payload.graduate_school,
+        'major': payload.major,
+        'current_address': payload.current_address,
+        'emergency_contact': payload.emergency_contact,
+        'emergency_contact_phone': payload.emergency_contact_phone,
+        'photo_attachment': payload.photo_attachment,
+        'id_card_attachments': payload.id_card_attachments,
+        'education_certificate_attachments': payload.education_certificate_attachments,
+        'medical_report_attachments': payload.medical_report_attachments,
+    }
+    return {
+        **current,
+        **editable_fields,
+    }
+
+
+def _resolve_current_employee(user: dict, repository) -> dict | None:
+    matched_user = next((item for item in DEFAULT_DATA['users'] if item['username'] == user['username']), None)
+    employee_no = str((matched_user or {}).get('employeeNo') or '').strip()
+    if not employee_no:
+        return None
+    return next(
+        (
+            item for item in repository.list('employees')
+            if str(item.get('employee_no') or item.get('employeeNo') or '').strip() == employee_no
+        ),
+        None,
+    )
 
 
 def _normalize_text(value: str) -> str:
@@ -347,7 +401,7 @@ async def employee_ai_workforce_report(payload: dict, user=Depends(require_roles
 @router.get('/{employee_id}/attachments/{field}/{index}')
 def preview_employee_attachment(employee_id: str, field: str, index: int, user=Depends(require_roles('employee', 'hr', 'boss', 'manager'))):
     repository = get_repository()
-    employee = repository.get('employees', employee_id)
+    employee = _resolve_employee_by_identifier(repository, employee_id)
     if not employee:
         raise HTTPException(status_code=404, detail='员工不存在')
     _ensure_employee_scope(user, employee)
@@ -357,7 +411,7 @@ def preview_employee_attachment(employee_id: str, field: str, index: int, user=D
 @router.get('/{employee_id}/attachments/{field}/{index}/download')
 def download_employee_attachment(employee_id: str, field: str, index: int, user=Depends(require_roles('employee', 'hr', 'boss', 'manager'))):
     repository = get_repository()
-    employee = repository.get('employees', employee_id)
+    employee = _resolve_employee_by_identifier(repository, employee_id)
     if not employee:
         raise HTTPException(status_code=404, detail='员工不存在')
     _ensure_employee_scope(user, employee)
@@ -378,6 +432,23 @@ def create_employee(payload: EmployeePayload, user=Depends(require_roles('hr')))
     _ensure_unique_fields(repository, payload)
     document = repository.upsert('employees', payload.model_dump())
     return ok(document, '员工创建成功')
+
+
+@router.put('/self/archive')
+def update_my_archive(payload: EmployeePayload, user=Depends(require_roles('employee'))):
+    repository = get_repository()
+    employee = _resolve_current_employee(user, repository)
+    if not employee:
+        raise HTTPException(status_code=404, detail='员工不存在')
+    document = repository.upsert(
+        'employees',
+        {
+            'id': employee['id'],
+            **_build_employee_self_update_payload(employee, payload),
+            'created_at': employee.get('created_at'),
+        },
+    )
+    return ok(document, '个人档案更新成功')
 
 
 @router.put('/{employee_id}')

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.repositories.factory import get_repository
-from app.schemas.common import LoginRequest, RefreshTokenRequest
+from app.schemas.common import LoginRequest, RefreshTokenRequest, VerifyPasswordRequest
 from app.security.auth import get_current_user, manager
 from app.services.seed import DEFAULT_DATA
 from app.utils.responses import ok
@@ -38,6 +38,7 @@ def _merge_user_profile(matched: dict) -> dict:
         'current_address': employee.get('current_address', ''),
         'emergency_contact': employee.get('emergency_contact', ''),
         'emergency_contact_phone': employee.get('emergency_contact_phone', ''),
+        'photo_attachment': employee.get('photo_attachment', {}),
         'id_card_attachments': employee.get('id_card_attachments', []),
         'education_certificate_attachments': employee.get('education_certificate_attachments', []),
         'labor_contract_attachments': employee.get('labor_contract_attachments', []),
@@ -87,6 +88,14 @@ def refresh_token(payload: RefreshTokenRequest):
 def logout(payload: RefreshTokenRequest, user=Depends(get_current_user)):
     manager.revoke_refresh_token(payload.refresh_token)
     return ok(message='退出登录成功')
+
+
+@router.post('/verify-password')
+def verify_password(payload: VerifyPasswordRequest, user=Depends(get_current_user)):
+    matched = next((item for item in DEFAULT_DATA['users'] if item['username'] == user['username']), None)
+    if not matched or matched['password'] != payload.password:
+        raise HTTPException(status_code=401, detail='密码不正确')
+    return ok({'verified': True}, '验证成功')
 
 
 @router.get('/me')

@@ -73,6 +73,7 @@ export const useAppStore = defineStore('app', {
           currentAddress: result.data.current_address,
           emergencyContact: result.data.emergency_contact,
           emergencyContactPhone: result.data.emergency_contact_phone,
+          photoAttachment: result.data.photo_attachment || {},
           idCardAttachments: result.data.id_card_attachments || [],
           educationCertificateAttachments: result.data.education_certificate_attachments || [],
           laborContractAttachments: result.data.labor_contract_attachments || [],

@@ -160,7 +160,22 @@ def _next_leave_status(level: str) -> str:
 
 
 def _sync_leave_status(repository, row: dict, status: str, user: dict):
-    if not row.get('source_id') or row.get('category') != '人事审批':
+    if not row.get('source_id'):
+        return
+    if row.get('category') == '资产审批' and row.get('type') in {'办公用品领用', '资产领用', '办公设备领用'}:
+        resource = 'office_supply_requests' if row.get('type') == '办公用品领用' else 'asset_requests'
+        request_row = repository.get(resource, row['source_id'])
+        if not request_row:
+            return
+        repository.upsert(resource, {**request_row, 'status': status, 'approver': user['username']})
+        return
+    if row.get('type') in {'公章使用', '会议室申请', '会议室预约', '用车申请', '转正申请', '调岗申请', '离职申请', '薪酬异动', '加班申请'}:
+        request_row = repository.get('general_requests', row['source_id'])
+        if not request_row:
+            return
+        repository.upsert('general_requests', {**request_row, 'status': status, 'approver': user['username']})
+        return
+    if row.get('category') != '人事审批':
         return
     if row.get('type') == '补卡申请':
         supplement_row = repository.get('supplements', row['source_id'])
