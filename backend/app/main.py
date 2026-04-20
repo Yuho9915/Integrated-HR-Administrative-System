@@ -4,7 +4,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.router import api_router
 from app.core.config import get_settings
 from app.db.sqlite import create_sqlite_tables
-from app.services.seed import seed_data
 
 settings = get_settings()
 
@@ -27,7 +26,6 @@ app.add_middleware(
 def on_startup() -> None:
     if settings.db_driver.lower() == 'sqlite':
         create_sqlite_tables()
-    seed_data()
 
 
 @app.get('/')

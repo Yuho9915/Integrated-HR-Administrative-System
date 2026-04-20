@@ -14,46 +14,57 @@
       :show-close="false"
       destroy-on-close
       align-center
+      @closed="resetConversation"
     >
       <template #header>
         <div class="floating-ai__window-actions">
-          <button class="floating-ai__window-btn floating-ai__window-btn--ghost" type="button" aria-label="最小化">—</button>
-          <button class="floating-ai__window-btn" type="button" @click="showDialog = false" aria-label="关闭 AI 助手">×</button>
+          <button class="floating-ai__window-btn" type="button" @click="closeDialog" aria-label="关闭小助理">×</button>
         </div>
       </template>
 
-      <div class="floating-ai__panel">
-        <div class="floating-ai__hero">
-          <div class="floating-ai__hero-avatar">
-            <img class="floating-ai__avatar-image floating-ai__avatar-image--hero" :src="robotImage" alt="小助理" />
+      <div class="floating-ai__panel" :class="{ 'is-chat-mode': hasConversation }">
+        <template v-if="!hasConversation">
+          <div class="floating-ai__hero">
+            <div class="floating-ai__hero-avatar">
+              <img class="floating-ai__avatar-image floating-ai__avatar-image--hero" :src="robotImage" alt="小助理" />
+            </div>
+            <h3>Hi，欢迎使用小助理</h3>
+            <p>我可以帮你解答考勤、绩效、薪酬、流程等问题</p>
           </div>
-          <h3>Hi，欢迎使用小助理</h3>
-          <p>我可以帮你解答考勤、绩效、薪酬、流程等问题</p>
-        </div>
 
-        <div class="floating-ai__quick">
-          <button
-            v-for="item in quickQuestions"
-            :key="item"
-            type="button"
-            class="floating-ai__quick-card"
-            @click="useQuestion(item)"
-          >
-            <strong>{{ item }}</strong>
-            <span>点击快速发起咨询</span>
-          </button>
-        </div>
-
-        <div v-if="answer || loading" class="floating-ai__answer">
-          <div class="floating-ai__answer-head">
-            <span>AI 回复</span>
-            <el-tag v-if="loading" size="small" type="primary">思考中</el-tag>
+          <div class="floating-ai__quick">
+            <button
+              v-for="item in quickQuestions"
+              :key="item"
+              type="button"
+              class="floating-ai__quick-card"
+              @click="useQuestion(item)"
+            >
+              <strong>{{ item }}</strong>
+              <span>点击快速发起咨询</span>
+            </button>
           </div>
-          <p v-if="!loading">{{ answer }}</p>
-          <div v-else class="floating-ai__skeleton">
-            <span></span>
-            <span></span>
-            <span></span>
+        </template>
+
+        <div v-else class="floating-ai__chat-window">
+          <div class="floating-ai__messages">
+            <div v-for="item in messages" :key="item.id" class="floating-ai__message" :class="`is-${item.role}`">
+              <div class="floating-ai__message-bubble">
+                <span class="floating-ai__message-role">{{ item.role === 'user' ? '你' : '小助理' }}</span>
+                <p>{{ item.content }}</p>
+              </div>
+            </div>
+
+            <div v-if="loading" class="floating-ai__message is-assistant">
+              <div class="floating-ai__message-bubble">
+                <span class="floating-ai__message-role">小助理</span>
+                <div class="floating-ai__skeleton">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -62,7 +73,7 @@
             <el-input
               v-model="question"
               type="textarea"
-              :rows="4"
+              :rows="2"
               resize="none"
               placeholder="输入你想咨询的 HR 相关问题..."
               @keydown.enter.exact.prevent="sendQuestion"
@@ -120,11 +131,22 @@ const roleQuickQuestionMap = {
 const quickQuestions = computed(() => roleQuickQuestionMap[store.user?.role] || roleQuickQuestionMap.employee);
 const showDialog = ref(false);
 const question = ref('');
-const answer = ref('');
 const loading = ref(false);
+const messages = ref([]);
+const hasConversation = computed(() => messages.value.length > 0);
 
 const openDialog = () => {
   showDialog.value = true;
+};
+
+const closeDialog = () => {
+  showDialog.value = false;
+};
+
+const resetConversation = () => {
+  question.value = '';
+  loading.value = false;
+  messages.value = [];
 };
 
 const useQuestion = (value) => {
@@ -134,11 +156,17 @@ const useQuestion = (value) => {
 const sendQuestion = async () => {
   const prompt = question.value.trim();
   if (!prompt || loading.value) return;
+
+  messages.value.push({ id: `user-${Date.now()}`, role: 'user', content: prompt });
+  question.value = '';
   loading.value = true;
-  answer.value = '';
+
   try {
     const result = await askAssistant({ prompt });
-    answer.value = result.data.content || '暂未获取到回复';
+    const content = result?.data?.content || '当前请求失败，请稍后重试。';
+    messages.value.push({ id: `assistant-${Date.now()}`, role: 'assistant', content });
+  } catch {
+    messages.value.push({ id: `assistant-${Date.now()}`, role: 'assistant', content: '当前请求失败，请稍后重试。' });
   } finally {
     loading.value = false;
   }
@@ -153,21 +181,21 @@ const sendQuestion = async () => {
   z-index: 60;
   display: grid;
   place-items: center;
-  width: 78px;
-  height: 78px;
+  width: 38px;
+  height: 38px;
   padding: 0;
   border: 0;
   border-radius: 50%;
   background: radial-gradient(circle at 30% 30%, rgba(127, 211, 255, 0.95), rgba(52, 141, 255, 0.96) 52%, rgba(31, 93, 255, 0.98) 100%);
-  box-shadow: 0 20px 42px rgba(31, 93, 255, 0.3), 0 0 0 6px rgba(126, 209, 255, 0.14);
+  box-shadow: 0 12px 26px rgba(31, 93, 255, 0.24), 0 0 0 3px rgba(126, 209, 255, 0.12);
   cursor: pointer;
   overflow: hidden;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .floating-ai__fab:hover {
-  transform: translateY(-3px) scale(1.03);
-  box-shadow: 0 26px 48px rgba(31, 93, 255, 0.36), 0 0 0 8px rgba(126, 209, 255, 0.18);
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 16px 30px rgba(31, 93, 255, 0.3), 0 0 0 4px rgba(126, 209, 255, 0.16);
 }
 
 .floating-ai__pulse {
@@ -179,8 +207,8 @@ const sendQuestion = async () => {
 }
 
 .floating-ai__avatar {
-  width: 64px;
-  height: 64px;
+  width: 30px;
+  height: 30px;
   display: grid;
   place-items: center;
   border-radius: 50%;
@@ -194,10 +222,10 @@ const sendQuestion = async () => {
 }
 
 .floating-ai__avatar-image--fab {
-  width: 56px;
-  height: 56px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
-  box-shadow: 0 8px 18px rgba(31, 93, 255, 0.22);
+  box-shadow: 0 4px 10px rgba(31, 93, 255, 0.18);
 }
 
 .floating-ai__avatar-image--hero {
@@ -227,37 +255,38 @@ const sendQuestion = async () => {
 .floating-ai__window-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
   padding: 18px 20px 0;
 }
 
 .floating-ai__window-btn {
-  width: 34px;
-  height: 34px;
-  border: 1px solid rgba(24, 46, 94, 0.08);
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(116, 136, 171, 0.14);
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.9);
-  color: #5c6b80;
-  font-size: 18px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(246, 249, 253, 0.98));
+  color: #7d8ca3;
+  font-size: 20px;
   line-height: 1;
   cursor: pointer;
+  box-shadow: 0 8px 18px rgba(119, 139, 172, 0.08);
   transition: all 0.2s ease;
 }
 
 .floating-ai__window-btn:hover {
-  background: #fff;
-  color: #31425a;
-  box-shadow: 0 6px 14px rgba(58, 78, 120, 0.08);
-}
-
-.floating-ai__window-btn--ghost {
-  font-size: 20px;
+  color: #50627d;
+  border-color: rgba(116, 136, 171, 0.22);
+  box-shadow: 0 10px 22px rgba(119, 139, 172, 0.12);
+  transform: translateY(-1px);
 }
 
 .floating-ai__panel {
   display: grid;
-  gap: 28px;
+  gap: 24px;
   padding-top: 8px;
+}
+
+.floating-ai__panel.is-chat-mode {
+  gap: 18px;
 }
 
 .floating-ai__hero {
@@ -332,31 +361,58 @@ const sendQuestion = async () => {
   font-size: 12px;
 }
 
-.floating-ai__answer {
-  padding: 18px 20px;
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(72, 112, 182, 0.08);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+.floating-ai__chat-window {
+  display: grid;
+  min-height: 420px;
+  max-height: 420px;
+  padding-top: 4px;
 }
 
-.floating-ai__answer-head {
+.floating-ai__messages {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.floating-ai__message {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 10px;
 }
 
-.floating-ai__answer-head span {
-  color: #6d7d93;
-  font-size: 13px;
+.floating-ai__message.is-user {
+  justify-content: flex-end;
 }
 
-.floating-ai__answer p {
+.floating-ai__message.is-assistant {
+  justify-content: flex-start;
+}
+
+.floating-ai__message-bubble {
+  max-width: 78%;
+  padding: 14px 16px;
+  border-radius: 22px;
+  background: #ffffff;
+  border: 1px solid rgba(72, 112, 182, 0.08);
+  box-shadow: 0 8px 18px rgba(65, 92, 136, 0.04);
+}
+
+.floating-ai__message.is-user .floating-ai__message-bubble {
+  background: linear-gradient(135deg, #edf5ff, #f7fbff);
+}
+
+.floating-ai__message-role {
+  display: block;
+  margin-bottom: 8px;
+  color: #7b8aa2;
+  font-size: 12px;
+}
+
+.floating-ai__message-bubble p {
   margin: 0;
   color: var(--hr-title);
-  line-height: 1.9;
+  line-height: 1.85;
   white-space: pre-wrap;
 }
 
@@ -365,23 +421,23 @@ const sendQuestion = async () => {
 }
 
 .floating-ai__composer {
-  padding: 18px 20px 16px;
-  border-radius: 28px;
+  padding: 14px 18px 12px;
+  border-radius: 24px;
   background: rgba(255, 255, 255, 0.96);
   border: 1px solid rgba(72, 112, 182, 0.08);
   box-shadow: 0 14px 30px rgba(65, 92, 136, 0.08);
 }
 
 :deep(.floating-ai__composer .el-textarea__inner) {
-  min-height: 116px !important;
-  padding: 4px 0;
+  min-height: 64px !important;
+  padding: 2px 0;
   border: 0;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
   color: var(--hr-title);
-  font-size: 16px;
-  line-height: 1.8;
+  font-size: 15px;
+  line-height: 1.7;
 }
 
 :deep(.floating-ai__composer .el-textarea__inner::placeholder) {
@@ -476,18 +532,18 @@ const sendQuestion = async () => {
   .floating-ai__fab {
     right: 14px;
     bottom: 14px;
-    width: 68px;
-    height: 68px;
+    width: 38px;
+    height: 38px;
   }
 
   .floating-ai__avatar {
-    width: 56px;
-    height: 56px;
+    width: 30px;
+    height: 30px;
   }
 
   .floating-ai__avatar-image--fab {
-    width: 48px;
-    height: 48px;
+    width: 26px;
+    height: 26px;
   }
 
   .floating-ai__window-actions {
@@ -498,8 +554,17 @@ const sendQuestion = async () => {
     grid-template-columns: 1fr;
   }
 
+  .floating-ai__chat-window {
+    min-height: 360px;
+    max-height: 360px;
+  }
+
+  .floating-ai__message-bubble {
+    max-width: 100%;
+  }
+
   .floating-ai__composer {
-    padding: 16px;
+    padding: 14px;
   }
 
   .floating-ai__composer-bottom {

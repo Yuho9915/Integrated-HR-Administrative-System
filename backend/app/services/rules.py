@@ -11,7 +11,7 @@ LEAVE_RULES = {
     '丧假': {'annual_limit': 5, 'pay_rate': 1.0, 'approval_chain': ['manager', 'hr']},
     '年假': {'annual_limit': 10, 'pay_rate': 1.0, 'approval_chain': ['manager']},
     '婚假': {'annual_limit': 3, 'pay_rate': 1.0, 'approval_chain': ['manager', 'hr']},
-    '产假': {'annual_limit': 128, 'pay_rate': 1.0, 'approval_chain': ['manager', 'hr', 'boss']},
+    '产假': {'annual_limit': 128, 'pay_rate': 1.0, 'approval_chain': ['manager', 'hr']},
     '调休': {'annual_limit': 30, 'pay_rate': 1.0, 'approval_chain': ['manager']},
     '出差申请': {'annual_limit': 180, 'pay_rate': 1.0, 'approval_chain': ['manager', 'hr']},
     '外出申请': {'annual_limit': 60, 'pay_rate': 1.0, 'approval_chain': ['manager']},

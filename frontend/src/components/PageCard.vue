@@ -15,7 +15,7 @@
 
 <script setup>
 defineProps({
-  title: { type: String, required: true },
+  title: { type: String, default: '' },
   description: { type: String, default: '' },
   hideHeader: { type: Boolean, default: false },
 });

@@ -11,8 +11,10 @@ import EmployeePerformanceView from '@/views/employee/EmployeePerformanceView.vu
 import EmployeeApplicationsView from '@/views/employee/EmployeeApplicationsView.vue';
 import EmployeeAssistantView from '@/views/employee/EmployeeAssistantView.vue';
 
+import ManagerDepartmentDashboardView from '@/views/manager/ManagerDepartmentDashboardView.vue';
+import ManagerDepartmentEmployeesView from '@/views/manager/ManagerDepartmentEmployeesView.vue';
+import ManagerDepartmentAttendanceView from '@/views/manager/ManagerDepartmentAttendanceView.vue';
 import ManagerPerformanceEntryView from '@/views/manager/ManagerPerformanceEntryView.vue';
-import ManagerPerformanceCheckView from '@/views/manager/ManagerPerformanceCheckView.vue';
 import ManagerApprovalsView from '@/views/manager/ManagerApprovalsView.vue';
 
 import HRDashboardView from '@/views/hr/HRDashboardView.vue';
@@ -23,10 +25,6 @@ import HRPayrollView from '@/views/hr/HRPayrollView.vue';
 import HRApprovalsView from '@/views/hr/HRApprovalsView.vue';
 import HRAdministrationView from '@/views/hr/HRAdministrationView.vue';
 
-import BossOverviewView from '@/views/boss/BossOverviewView.vue';
-import BossReportsView from '@/views/boss/BossReportsView.vue';
-import BossCostsView from '@/views/boss/BossCostsView.vue';
-
 import { ROLE_HOME } from '@/constants/roles';
 import { useAppStore } from '@/stores/app';
 
@@ -35,7 +33,7 @@ const routes = [
     path: '/login',
     name: 'login',
     component: LoginView,
-    meta: { public: true, title: '登录系统', description: '支持员工、部门经理、人事行政、老板四类角色登录。' },
+    meta: { public: true, title: '登录系统', description: '支持员工、部门经理、人事行政三类角色登录。' },
   },
   {
     path: '/',
@@ -56,9 +54,11 @@ const routes = [
       { path: 'employee/applications', component: EmployeeApplicationsView, meta: { role: 'employee', title: '申请中心', description: '提交请假、加班、领用、报修等申请。' } },
       { path: 'employee/assistant', component: EmployeeAssistantView, meta: { role: 'employee', title: 'AI问答机器人', description: '7×24 小时智能问答与制度咨询。' } },
 
-      { path: 'manager/performance-entry', component: ManagerPerformanceEntryView, meta: { role: 'manager', title: '部门绩效录入', description: '批量录入部门绩效等级与分数。' } },
-      { path: 'manager/performance-check', component: ManagerPerformanceCheckView, meta: { role: 'manager', title: '绩效校验', description: '提交 AI 校验等级分布与异常情况。' } },
-      { path: 'manager/approvals', component: ManagerApprovalsView, meta: { role: 'manager', title: '本部门审批', description: '审批请假、加班、绩效异议等事项。' } },
+      { path: 'manager/dashboard', component: ManagerDepartmentDashboardView, meta: { role: 'manager', title: '部门首页', description: '查看本部门员工、考勤、审批与绩效概览。' } },
+      { path: 'manager/employees', component: ManagerDepartmentEmployeesView, meta: { role: 'manager', title: '本部门员工', description: '查看本部门成员名单、岗位与状态信息。' } },
+      { path: 'manager/attendance', component: ManagerDepartmentAttendanceView, meta: { role: 'manager', title: '本部门考勤', description: '查看本部门月度出勤、异常和请假情况。' } },
+      { path: 'manager/performance-entry', component: ManagerPerformanceEntryView, meta: { role: 'manager', title: '绩效录入', description: '对本部门员工进行绩效审核与评分。' } },
+      { path: 'manager/approvals', component: ManagerApprovalsView, meta: { role: 'manager', title: '本部门审批', description: '审批本部门请假、加班、调岗等事项。' } },
 
       { path: 'hr/dashboard', component: HRDashboardView, meta: { role: 'hr', title: 'HR首页', description: '查看人事行政六大模块的一屏总览看板。' } },
       { path: 'hr/employees', component: HREmployeesView, meta: { role: 'hr', title: '员工管理', description: '维护员工档案、组织架构、合同与状态。' } },
@@ -67,10 +67,6 @@ const routes = [
       { path: 'hr/performance', component: HRPerformanceView, meta: { role: 'hr', title: '绩效管理', description: '查看部门绩效分布、异议申请与统计。' } },
       { path: 'hr/approvals', component: HRApprovalsView, meta: { role: 'hr', title: '审批中心', description: '统一管理人事、行政、资产、综合审批。' } },
       { path: 'hr/administration', component: HRAdministrationView, meta: { role: 'hr', title: '行政/资产管理', description: '管理物品库存、资产、用车、会议室和报修。' } },
-
-      { path: 'boss/overview', component: BossOverviewView, meta: { role: 'boss', title: '数据总览', description: '查看公司级经营、人力与考勤概览。' } },
-      { path: 'boss/reports', component: BossReportsView, meta: { role: 'boss', title: '图表报表', description: '查看部门趋势、结构统计与报表导出。' } },
-      { path: 'boss/costs', component: BossCostsView, meta: { role: 'boss', title: '人力成本总览', description: '查看人力成本趋势、预算执行和成本结构。' } },
     ],
   },
   {

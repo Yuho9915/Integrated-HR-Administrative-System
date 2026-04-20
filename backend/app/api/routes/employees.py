@@ -74,7 +74,7 @@ def _resolve_employee_by_identifier(repository, identifier: str) -> dict | None:
 
 
 def _ensure_employee_scope(user: dict, employee: dict):
-    if user['role'] in ['hr', 'manager', 'boss']:
+    if user['role'] in ['hr', 'manager']:
         return
     if user['role'] == 'employee' and user['username'] == 'employee' and str(employee.get('employee_no') or employee.get('employeeNo') or '').strip() == 'EMP-1024':
         return
@@ -248,13 +248,13 @@ def _is_valid_bank_account(value: str) -> bool:
 
 
 @router.get('')
-def get_employee_list(user=Depends(require_roles('hr', 'boss', 'manager'))):
+def get_employee_list(user=Depends(require_roles('hr', 'manager'))):
     repository = get_repository()
     return ok(repository.list('employees'))
 
 
 @router.get('/meta')
-def get_employee_meta(user=Depends(require_roles('hr', 'boss', 'manager'))):
+def get_employee_meta(user=Depends(require_roles('hr', 'manager'))):
     repository = get_repository()
     departments, positions = _get_organization_meta(repository)
     return ok({'departments': departments, 'positions': positions})
@@ -399,7 +399,7 @@ async def employee_ai_workforce_report(payload: dict, user=Depends(require_roles
 
 
 @router.get('/{employee_id}/attachments/{field}/{index}')
-def preview_employee_attachment(employee_id: str, field: str, index: int, user=Depends(require_roles('employee', 'hr', 'boss', 'manager'))):
+def preview_employee_attachment(employee_id: str, field: str, index: int, user=Depends(require_roles('employee', 'hr', 'manager'))):
     repository = get_repository()
     employee = _resolve_employee_by_identifier(repository, employee_id)
     if not employee:
@@ -409,7 +409,7 @@ def preview_employee_attachment(employee_id: str, field: str, index: int, user=D
 
 
 @router.get('/{employee_id}/attachments/{field}/{index}/download')
-def download_employee_attachment(employee_id: str, field: str, index: int, user=Depends(require_roles('employee', 'hr', 'boss', 'manager'))):
+def download_employee_attachment(employee_id: str, field: str, index: int, user=Depends(require_roles('employee', 'hr', 'manager'))):
     repository = get_repository()
     employee = _resolve_employee_by_identifier(repository, employee_id)
     if not employee:

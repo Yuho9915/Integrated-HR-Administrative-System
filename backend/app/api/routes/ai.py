@@ -11,12 +11,12 @@ service = AIService()
 
 
 @router.get('/health')
-async def ai_health(user=Depends(require_roles('employee', 'manager', 'hr', 'boss'))):
+async def ai_health(user=Depends(require_roles('employee', 'manager', 'hr'))):
     return ok(await service.health())
 
 
 @router.post('/chat')
-async def ai_chat(payload: AIChatRequest, user=Depends(require_roles('employee', 'manager', 'hr', 'boss'))):
+async def ai_chat(payload: AIChatRequest, user=Depends(require_roles('employee', 'manager', 'hr'))):
     result = await service.ask(prompt=payload.prompt, system_context=payload.system_context)
     return ok(result.model_dump())
 

@@ -8,7 +8,7 @@ router = APIRouter(prefix='/reports', tags=['reports'])
 
 
 @router.get('/summary')
-def get_report_summary(user=Depends(require_roles('hr', 'boss'))):
+def get_report_summary(user=Depends(require_roles('hr'))):
     repository = get_repository()
     employees = repository.list('employees')
     attendance = repository.list('attendance')

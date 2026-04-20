@@ -48,8 +48,10 @@ export const roleMenus = {
     { path: '/employee/applications', label: '申请中心', icon: 'Promotion' },
   ],
   manager: [
+    { path: '/manager/dashboard', label: '部门首页', icon: 'DataBoard' },
+    { path: '/manager/employees', label: '本部门员工', icon: 'Postcard' },
+    { path: '/manager/attendance', label: '本部门考勤', icon: 'Clock' },
     { path: '/manager/performance-entry', label: '绩效录入', icon: 'Notebook' },
-    { path: '/manager/performance-check', label: '绩效校验', icon: 'Checked' },
     { path: '/manager/approvals', label: '本部门审批', icon: 'Files' },
   ],
   hr: [
@@ -60,10 +62,5 @@ export const roleMenus = {
     { path: '/hr/performance', label: '绩效管理', icon: 'TrendCharts' },
     { path: '/hr/approvals', label: '审批中心', icon: 'Checked' },
     { path: '/hr/administration', label: '行政资产', icon: 'OfficeBuilding' },
-  ],
-  boss: [
-    { path: '/boss/overview', label: '数据总览', icon: 'DataBoard' },
-    { path: '/boss/reports', label: '图表报表', icon: 'PieChart' },
-    { path: '/boss/costs', label: '人力成本', icon: 'Wallet' },
   ],
 };

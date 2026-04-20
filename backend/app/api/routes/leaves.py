@@ -3,17 +3,37 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.repositories.factory import get_repository
 from app.schemas.common import LeavePayload
 from app.security.auth import require_roles
-from app.services.ai_service import AIService
 from app.services.rules import RuleEngine
 from app.utils.responses import ok
 
 router = APIRouter(prefix='/leaves', tags=['leaves'])
-ai_service = AIService()
 rule_engine = RuleEngine()
 
 
+ACTIVE_LEAVE_STATUSES = {'待经理审批', '待审批', '已通过'}
+
+
+def _normalize_text(value) -> str:
+    return str(value or '').strip()
+
+
+def _ensure_no_duplicate_leave(repository, payload: LeavePayload):
+    duplicate = next((
+        row for row in repository.list('leaves')
+        if (row.get('employee_no') == payload.employee_no or row.get('employeeNo') == payload.employee_no)
+        and row.get('leave_type') == payload.leave_type
+        and _normalize_text(row.get('start_at')) == _normalize_text(payload.start_at)
+        and _normalize_text(row.get('end_at')) == _normalize_text(payload.end_at)
+        and float(row.get('days') or 0) == float(payload.days)
+        and _normalize_text(row.get('reason')) == _normalize_text(payload.reason)
+        and row.get('status') in ACTIVE_LEAVE_STATUSES
+    ), None)
+    if duplicate:
+        raise HTTPException(status_code=400, detail='请勿重复提交相同的请假申请')
+
+
 @router.get('')
-def get_leave_list(user=Depends(require_roles('employee', 'manager', 'hr', 'boss'))):
+def get_leave_list(user=Depends(require_roles('employee', 'manager', 'hr'))):
     repository = get_repository()
     rows = repository.list('leaves')
     if user['role'] == 'employee':
@@ -29,6 +49,7 @@ async def create_leave(payload: LeavePayload, user=Depends(require_roles('employ
     if not validation['valid']:
         raise HTTPException(status_code=400, detail=validation['reason'])
     repository = get_repository()
+    _ensure_no_duplicate_leave(repository, payload)
     employee = next((item for item in repository.list('employees') if (item.get('employee_no') or item.get('employeeNo')) == payload.employee_no), None)
     applicant_name = employee.get('name') if employee else payload.employee_no
     applicant_department = employee.get('department') if employee else ''
@@ -39,7 +60,6 @@ async def create_leave(payload: LeavePayload, user=Depends(require_roles('employ
         'approval_chain': validation['rule']['approval_chain'],
         'pay_rate': validation['rule']['pay_rate'],
     })
-    approval = await ai_service.smart_approval(document)
     repository.upsert('approvals', {
         'category': '人事审批',
         'applicant': applicant_name,
@@ -74,4 +94,4 @@ async def create_leave(payload: LeavePayload, user=Depends(require_roles('employ
             }
         ],
     })
-    return ok({'leave': document, 'ai': approval}, '请假申请已提交')
+    return ok({'leave': document}, '请假申请已提交')

@@ -14,8 +14,6 @@ LEVEL_TO_USER = {
     '经理': 'manager',
     'hr': 'admin.hr',
     '人事行政': 'admin.hr',
-    'boss': 'boss',
-    '总经理': 'boss',
 }
 
 LEVEL_TO_LABEL = {
@@ -23,8 +21,6 @@ LEVEL_TO_LABEL = {
     '经理': '经理审批',
     'hr': '人事行政审批',
     '人事行政': '人事行政审批',
-    'boss': '总经理审批',
-    '总经理': '总经理审批',
 }
 
 
@@ -241,7 +237,7 @@ def _apply_decision(repository, row: dict, payload: DecisionRequest, user: dict)
 def get_approval_overview(
     status: str = Query('', alias='status'),
     approval_type: str = Query('', alias='type'),
-    user=Depends(require_roles('manager', 'hr', 'boss')),
+    user=Depends(require_roles('manager', 'hr')),
 ):
     repository = get_repository()
     rows = [_normalize_approval(row, repository) for row in repository.list('approvals')]
@@ -262,7 +258,7 @@ def get_approval_overview(
 
 
 @router.get('/{approval_id}')
-def get_approval_detail(approval_id: str, user=Depends(require_roles('manager', 'hr', 'boss'))):
+def get_approval_detail(approval_id: str, user=Depends(require_roles('manager', 'hr'))):
     repository = get_repository()
     row = repository.get('approvals', approval_id)
     if not row:
@@ -273,7 +269,7 @@ def get_approval_detail(approval_id: str, user=Depends(require_roles('manager', 
 
 
 @router.post('/batch-decision')
-def batch_decide_approval(payload: BatchDecisionRequest, user=Depends(require_roles('manager', 'hr', 'boss'))):
+def batch_decide_approval(payload: BatchDecisionRequest, user=Depends(require_roles('manager', 'hr'))):
     repository = get_repository()
     updated_rows = []
     for approval_id in payload.ids:
@@ -285,7 +281,7 @@ def batch_decide_approval(payload: BatchDecisionRequest, user=Depends(require_ro
 
 
 @router.post('/{approval_id}/decision')
-def decide_approval(approval_id: str, payload: DecisionRequest, user=Depends(require_roles('manager', 'hr', 'boss'))):
+def decide_approval(approval_id: str, payload: DecisionRequest, user=Depends(require_roles('manager', 'hr'))):
     repository = get_repository()
     row = repository.get('approvals', approval_id)
     if not row:

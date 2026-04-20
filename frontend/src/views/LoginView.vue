@@ -6,7 +6,7 @@
           <p class="login-copy__eyebrow">YUHO HR · 一体化协同平台</p>
           <h1>人事、行政、审批与 AI 助手统一入口</h1>
           <p>
-            严格遵循 PRD 与 MRD，采用浅色专业办公视觉，支持员工、部门经理、人事行政与老板多角色协同办公。
+            严格遵循 PRD 与 MRD，采用浅色专业办公视觉，支持员工、部门经理与人事行政多角色协同办公。
           </p>
         </div>
       </div>
@@ -66,7 +66,6 @@ const defaults = {
   employee: { username: 'employee', password: '123456' },
   manager: { username: 'manager', password: '123456' },
   hr: { username: 'admin.hr', password: '123456' },
-  boss: { username: 'boss', password: '123456' },
 };
 
 const storageKeys = {

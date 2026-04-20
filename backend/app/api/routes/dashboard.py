@@ -8,7 +8,7 @@ router = APIRouter(prefix='/dashboard', tags=['dashboard'])
 
 
 @router.get('/summary')
-def get_dashboard_summary(user=Depends(require_roles('employee', 'manager', 'hr', 'boss'))):
+def get_dashboard_summary(user=Depends(require_roles('employee', 'manager', 'hr'))):
     repository = get_repository()
     employees = repository.list('employees')
     payroll = repository.list('payroll')

@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import datetime
 
 from app.schemas.common import AIChatResponse
@@ -6,37 +7,12 @@ from app.services.rules import RuleEngine
 from app.utils.ai_client import DoubaoClient
 
 
-POSITION_INDICATOR_PRESETS = {
-    'tech': [
-        {'name': '任务完成率', 'weight': 35, 'targetValue': '按期完成迭代任务 ≥ 95%'},
-        {'name': '代码质量', 'weight': 25, 'targetValue': '关键缺陷数 ≤ 1，代码规范通过率 ≥ 98%'},
-        {'name': '交付时效', 'weight': 20, 'targetValue': '需求交付准时率 ≥ 95%'},
-        {'name': '团队协作', 'weight': 20, 'targetValue': '跨团队协作满意度 ≥ 90%'},
-    ],
-    'sales': [
-        {'name': '业绩达成率', 'weight': 35, 'targetValue': '销售目标达成率 ≥ 100%'},
-        {'name': '回款率', 'weight': 25, 'targetValue': '回款完成率 ≥ 95%'},
-        {'name': '客户满意度', 'weight': 20, 'targetValue': '客户满意度 ≥ 90%'},
-        {'name': '新客拓展', 'weight': 20, 'targetValue': '月度新客开发达成率 ≥ 100%'},
-    ],
-    'hr': [
-        {'name': '招聘完成率', 'weight': 35, 'targetValue': '招聘需求按期关闭率 ≥ 95%'},
-        {'name': '员工满意度', 'weight': 25, 'targetValue': '员工满意度 ≥ 90%'},
-        {'name': '流程优化', 'weight': 20, 'targetValue': '流程优化事项按计划落地'},
-        {'name': '合规性', 'weight': 20, 'targetValue': '制度执行与档案合规率 100%'},
-    ],
-    'general': [
-        {'name': '工作态度', 'weight': 20, 'targetValue': '工作积极主动，反馈及时'},
-        {'name': '执行力', 'weight': 35, 'targetValue': '任务按时按质完成率 ≥ 95%'},
-        {'name': '学习成长', 'weight': 20, 'targetValue': '完成岗位学习与复盘计划'},
-        {'name': '协作能力', 'weight': 25, 'targetValue': '跨部门协作评价良好及以上'},
-    ],
-}
 COMMENT_STYLE_TONE = {
     '鼓励型': '语言积极、肯定成果、兼顾成长建议。',
     '严格型': '语言正式、客观直接、强调问题与改进要求。',
     '中性型': '语言专业克制、客观平衡、避免夸张。',
 }
+logger = logging.getLogger(__name__)
 
 
 def extract_message_content(payload: dict) -> str:
@@ -51,9 +27,21 @@ class AIService:
         self.client = DoubaoClient()
         self.rule_engine = RuleEngine()
 
+    def _fallback_chat_content(self, prompt: str) -> str:
+        clean_prompt = (prompt or '').strip()
+        return (
+            'AI 服务鉴权失败或暂时不可用，请检查后端 ARK_API_KEY / ARK_MODEL 配置后重试。\n'
+            f'当前问题：{clean_prompt or "未提供问题"}'
+        )
+
     async def ask(self, prompt: str, system_context: str | None = None) -> AIChatResponse:
-        response = await self.client.chat(prompt=prompt, system_context=system_context)
-        return AIChatResponse(content=extract_message_content(response), model=self.client.model)
+        try:
+            response = await self.client.chat(prompt=prompt, system_context=system_context)
+            content = extract_message_content(response)
+        except Exception as exc:
+            logger.exception('AI chat request failed: %s', exc)
+            content = self._fallback_chat_content(prompt)
+        return AIChatResponse(content=content, model=self.client.model)
 
     async def health(self) -> dict:
         return await self.client.healthcheck()
@@ -146,47 +134,12 @@ class AIService:
             return POSITION_INDICATOR_PRESETS['hr']
         return POSITION_INDICATOR_PRESETS['general']
 
-    async def generate_performance_indicators(self, department: str, position: str) -> dict:
-        fallback_items = self._match_indicator_preset(department, position)
-        fallback = {'indicators': fallback_items, 'summary': f'已根据{department or "所在部门"}{position or "岗位"}生成建议指标。'}
-        result = await self.client.json_chat(
-            '请基于岗位信息生成绩效指标，严格返回JSON对象，字段为 indicators, summary。'
-            f'部门：{department or "未提供"}；岗位：{position or "未提供"}；参考模板：{json.dumps(fallback_items, ensure_ascii=False)}',
-            fallback,
-        )
-        indicators = result.get('indicators') or fallback_items
-        normalized = []
-        for item in indicators[:6]:
-            normalized.append({
-                'name': str(item.get('name') or '').strip() or '绩效指标',
-                'weight': max(0, min(100, round(float(item.get('weight', 0) or 0), 2))),
-                'targetValue': str(item.get('targetValue') or '').strip() or '按岗位要求达成既定目标',
-            })
-        if normalized:
-            total = sum(item['weight'] for item in normalized) or 100
-            for item in normalized:
-                item['weight'] = round(item['weight'] / total * 100, 2)
-            normalized[0]['weight'] = round(normalized[0]['weight'] + (100 - sum(item['weight'] for item in normalized)), 2)
-        return {'indicators': normalized or fallback_items, 'summary': result.get('summary') or fallback['summary']}
-
     async def auto_score_performance(self, payload: dict) -> dict:
-        indicators = payload.get('indicators') or []
         self_review = str(payload.get('selfReview') or '').strip()
         position = str(payload.get('position') or '').strip()
-        completion_scores, ability_scores = [], []
-        for item in indicators:
-            completion_rate = float(item.get('completionRate') or 0)
-            score = float(item.get('score') or 0)
-            weight = float(item.get('weight') or 0)
-            if completion_rate:
-                completion_scores.append(min(100, completion_rate))
-            if score:
-                completion_scores.append(min(100, score))
-            if weight:
-                ability_scores.append(min(100, 60 + weight * 0.4))
-        performance_score = round(sum(completion_scores) / len(completion_scores), 2) if completion_scores else 82.0
+        performance_score = 88.0 if len(self_review) >= 80 else 84.0 if len(self_review) >= 40 else 78.0
         attitude_score = 92.0 if len(self_review) >= 60 else 86.0 if len(self_review) >= 20 else 78.0
-        ability_score = round(sum(ability_scores) / len(ability_scores), 2) if ability_scores else 84.0
+        ability_score = 86.0 if len(self_review) >= 80 else 82.0 if len(self_review) >= 40 else 76.0
         total_score = round(performance_score * 0.6 + attitude_score * 0.2 + ability_score * 0.2, 2)
         grade = 'S' if total_score >= 90 else 'A' if total_score >= 80 else 'B' if total_score >= 70 else 'C' if total_score >= 60 else 'D'
         coefficient = {'S': 1.5, 'A': 1.2, 'B': 1.0, 'C': 0.8, 'D': 0.5}[grade]

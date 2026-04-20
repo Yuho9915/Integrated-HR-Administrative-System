@@ -13,7 +13,7 @@ rule_engine = RuleEngine()
 
 
 @router.get('/summary')
-def get_payroll_summary(user=Depends(require_roles('employee', 'hr', 'boss'))):
+def get_payroll_summary(user=Depends(require_roles('employee', 'hr'))):
     repository = get_repository()
     rows = repository.list('payroll')
     if user['role'] == 'employee':

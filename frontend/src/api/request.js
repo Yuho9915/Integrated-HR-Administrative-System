@@ -2,7 +2,6 @@ import axios from 'axios';
 import { ElMessage } from 'element-plus';
 
 import { appConfig } from '@/utils/config';
-import { handleDevMock, shouldHandleDevMock } from '@/mock/devApi';
 
 const request = axios.create({
   baseURL: appConfig.apiBaseUrl,
@@ -13,29 +12,6 @@ const getToken = () => localStorage.getItem('hr-system-token') || '';
 const getRefreshToken = () => localStorage.getItem('hr-system-refresh-token') || '';
 
 request.interceptors.request.use((config) => {
-  if (shouldHandleDevMock(config)) {
-    config.adapter = async () => {
-      try {
-        return {
-          data: await handleDevMock(config),
-          status: 200,
-          statusText: 'OK',
-          headers: {},
-          config,
-          request: {},
-        };
-      } catch (error) {
-        return Promise.reject({
-          config,
-          response: {
-            status: error.status || 500,
-            data: { detail: error.message || '请求失败，请稍后重试' },
-          },
-        });
-      }
-    };
-    return config;
-  }
   const token = getToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -68,7 +44,9 @@ request.interceptors.response.use(
     const message = error.response?.status === 401 && originalRequest.skipAuthRedirect
       ? '请先登录'
       : error.response?.data?.detail || '请求失败，请稍后重试';
-    ElMessage.error(message);
+    if (!originalRequest.suppressErrorMessage) {
+      ElMessage.error(message);
+    }
     return Promise.reject(error);
   },
 );

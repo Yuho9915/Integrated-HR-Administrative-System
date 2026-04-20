@@ -13,7 +13,7 @@ rule_engine = RuleEngine()
 
 
 @router.get('')
-def get_supplement_list(user=Depends(require_roles('employee', 'manager', 'hr', 'boss'))):
+def get_supplement_list(user=Depends(require_roles('employee', 'manager', 'hr'))):
     repository = get_repository()
     rows = repository.list('supplements')
     if user['role'] == 'employee':

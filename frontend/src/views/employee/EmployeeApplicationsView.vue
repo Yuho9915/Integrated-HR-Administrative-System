@@ -166,8 +166,8 @@
           </el-form-item>
         </template>
         <div class="apps-form-actions">
-          <el-button @click="showCreateDialog = false">取消</el-button>
-          <el-button type="primary" @click="submit">提交申请</el-button>
+          <el-button @click="showCreateDialog = false" :disabled="submitting">取消</el-button>
+          <el-button type="primary" :loading="submitting" :disabled="submitting" @click="submit">提交申请</el-button>
           <span v-if="supplementHint" class="apps-hint">{{ supplementHint }}</span>
         </div>
       </el-form>
@@ -221,6 +221,7 @@ const store = useAppStore();
 const route = useRoute();
 const formRef = ref();
 const loading = ref(false);
+const submitting = ref(false);
 const rows = ref([]);
 const assetOptions = ref([]);
 const showDetail = ref(false);
@@ -387,44 +388,48 @@ const refreshAssetOptions = async () => {
   });
 };
 
+const loadHistoryRows = async () => {
+  const [leaveResult, supplementRows, officeSupplyResult, assetRequestResult, generalRequestResult] = await Promise.all([
+    getLeaves(),
+    listSupplementApplications(store.user?.employeeNo || ''),
+    getOfficeSupplyRequests(),
+    getAssetRequests(),
+    getGeneralRequests(),
+  ]);
+  const leaveRows = (leaveResult.data || []).map((item) => ({ ...item, kind: 'leave' }));
+  const officeSupplyRows = (officeSupplyResult.data || []).map((item) => ({
+    ...item,
+    leave_type: '办公用品领用',
+    start_at: item.needed_by || item.start_at || '',
+    end_at: item.needed_by || item.end_at || '',
+    approver: item.approver || '于浩',
+  }));
+  const assetRequestRows = (assetRequestResult.data || []).map((item) => ({
+    ...item,
+    leave_type: item.request_type || item.leave_type || item.type,
+    start_at: item.needed_by || item.start_at || '',
+    end_at: item.needed_by || item.end_at || '',
+    approver: item.approver || '于浩',
+    item_name: item.asset_name,
+  }));
+  const generalRequestRows = (generalRequestResult.data || []).map((item) => ({
+    ...item,
+    leave_type: item.request_type || item.leave_type || item.type,
+    start_at: item.start_at || item.needed_by || '',
+    end_at: item.end_at || '',
+    approver: item.approver || '于浩',
+    item_name: item.resource_name || item.title,
+    quantity: item.quantity,
+  }));
+  rows.value = [...generalRequestRows, ...assetRequestRows, ...officeSupplyRows, ...supplementRows.map(toApplicationRow), ...leaveRows]
+    .sort((a, b) => String(b.start_at || b.created_at || '').localeCompare(String(a.start_at || a.created_at || '')));
+};
+
 const loadData = async () => {
   loading.value = true;
   try {
-    const [leaveResult, supplementRows, officeSupplyResult, assetRequestResult, generalRequestResult] = await Promise.all([
-      getLeaves(),
-      listSupplementApplications(store.user?.employeeNo || ''),
-      getOfficeSupplyRequests(),
-      getAssetRequests(),
-      getGeneralRequests(),
-    ]);
-    const leaveRows = (leaveResult.data || []).map((item) => ({ ...item, kind: 'leave' }));
-    const officeSupplyRows = (officeSupplyResult.data || []).map((item) => ({
-      ...item,
-      leave_type: '办公用品领用',
-      start_at: item.needed_by || item.start_at || '',
-      end_at: item.needed_by || item.end_at || '',
-      approver: item.approver || '于浩',
-    }));
-    const assetRequestRows = (assetRequestResult.data || []).map((item) => ({
-      ...item,
-      leave_type: item.request_type || item.leave_type || item.type,
-      start_at: item.needed_by || item.start_at || '',
-      end_at: item.needed_by || item.end_at || '',
-      approver: item.approver || '于浩',
-      item_name: item.asset_name,
-    }));
-    const generalRequestRows = (generalRequestResult.data || []).map((item) => ({
-      ...item,
-      leave_type: item.request_type || item.leave_type || item.type,
-      start_at: item.start_at || item.needed_by || '',
-      end_at: item.end_at || '',
-      approver: item.approver || '于浩',
-      item_name: item.resource_name || item.title,
-      quantity: item.quantity,
-    }));
-    rows.value = [...generalRequestRows, ...assetRequestRows, ...officeSupplyRows, ...supplementRows.map(toApplicationRow), ...leaveRows]
-      .sort((a, b) => String(b.start_at || b.created_at || '').localeCompare(String(a.start_at || a.created_at || '')));
-    await Promise.all([refreshSupplementMeta(), refreshAssetOptions()]);
+    await loadHistoryRows();
+    await refreshSupplementMeta();
   } finally {
     loading.value = false;
   }
@@ -436,66 +441,72 @@ const formatPeriod = (row) => {
 };
 
 const submit = async () => {
-  await formRef.value.validate();
-  form.employee_no = store.user?.employeeNo || '';
-  if (form.leave_type === '办公用品领用') {
-    await createOfficeSupplyRequest({
-      employee_no: store.user?.employeeNo || '',
-      item_name: form.item_name,
-      quantity: form.quantity,
-      needed_by: form.needed_by,
-      reason: form.reason,
-    });
-    ElMessage.success('办公用品领用申请已提交');
-  } else if (isAssetRequestType.value) {
-    const selected = selectedAssetMeta.value;
-    await createAssetRequest({
-      employee_no: store.user?.employeeNo || '',
-      request_type: form.leave_type,
-      asset_code: form.asset_code,
-      asset_name: selected?.name || '',
-      quantity: form.quantity,
-      needed_by: form.needed_by,
-      reason: form.reason,
-    });
-    ElMessage.success(`${form.leave_type}已提交`);
-  } else if (isGeneralRequestType.value) {
-    const selectedResource = resourceOptions.value.find((item) => item.code === form.resource_code);
-    await createGeneralRequest({
-      employee_no: store.user?.employeeNo || '',
-      request_type: form.leave_type,
-      title: isAdminResourceType.value ? (selectedResource?.name || '') : form.resource_name,
-      resource_code: form.resource_code,
-      resource_name: isAdminResourceType.value ? (selectedResource?.name || '') : form.resource_name,
-      quantity: form.quantity,
-      start_at: form.start_at,
-      end_at: form.end_at,
-      needed_by: form.needed_by,
-      reason: form.reason,
-      meta: {
-        目标岗位: form.target_position,
-        生效日期: form.effective_date,
-        当前薪资: form.current_salary,
-        期望薪资: form.expected_salary,
-      },
-    });
-    ElMessage.success(`${form.leave_type}已提交`);
-  } else if (form.leave_type === '补卡申请') {
-    if (supplementCountValue.value >= 3) return ElMessage.warning('每月最多只能申请 3 次补卡');
-    await createSupplementApplication({
-      employeeNo: store.user?.employeeNo || '',
-      date: String(form.start_at).slice(0, 10),
-      time: String(form.start_at).slice(11, 16),
-      reason: form.reason,
-    });
-    ElMessage.success('补卡申请已提交，并已同步审批中心');
-  } else {
-    await createLeave(form);
-    ElMessage.success('申请已提交');
+  if (submitting.value) return;
+  submitting.value = true;
+  try {
+    await formRef.value.validate();
+    form.employee_no = store.user?.employeeNo || '';
+    if (form.leave_type === '办公用品领用') {
+      await createOfficeSupplyRequest({
+        employee_no: store.user?.employeeNo || '',
+        item_name: form.item_name,
+        quantity: form.quantity,
+        needed_by: form.needed_by,
+        reason: form.reason,
+      });
+      ElMessage.success('办公用品领用申请已提交');
+    } else if (isAssetRequestType.value) {
+      const selected = selectedAssetMeta.value;
+      await createAssetRequest({
+        employee_no: store.user?.employeeNo || '',
+        request_type: form.leave_type,
+        asset_code: form.asset_code,
+        asset_name: selected?.name || '',
+        quantity: form.quantity,
+        needed_by: form.needed_by,
+        reason: form.reason,
+      });
+      ElMessage.success(`${form.leave_type}已提交`);
+    } else if (isGeneralRequestType.value) {
+      const selectedResource = resourceOptions.value.find((item) => item.code === form.resource_code);
+      await createGeneralRequest({
+        employee_no: store.user?.employeeNo || '',
+        request_type: form.leave_type,
+        title: isAdminResourceType.value ? (selectedResource?.name || '') : form.resource_name,
+        resource_code: form.resource_code,
+        resource_name: isAdminResourceType.value ? (selectedResource?.name || '') : form.resource_name,
+        quantity: form.quantity,
+        start_at: form.start_at,
+        end_at: form.end_at,
+        needed_by: form.needed_by,
+        reason: form.reason,
+        meta: {
+          目标岗位: form.target_position,
+          生效日期: form.effective_date,
+          当前薪资: form.current_salary,
+          期望薪资: form.expected_salary,
+        },
+      });
+      ElMessage.success(`${form.leave_type}已提交`);
+    } else if (form.leave_type === '补卡申请') {
+      if (supplementCountValue.value >= 3) return ElMessage.warning('每月最多只能申请 3 次补卡');
+      await createSupplementApplication({
+        employeeNo: store.user?.employeeNo || '',
+        date: String(form.start_at).slice(0, 10),
+        time: String(form.start_at).slice(11, 16),
+        reason: form.reason,
+      });
+      ElMessage.success('补卡申请已提交，并已同步审批中心');
+    } else {
+      await createLeave(form);
+      ElMessage.success('申请已提交');
+    }
+    showCreateDialog.value = false;
+    resetForm();
+    await Promise.all([loadHistoryRows(), refreshSupplementMeta()]);
+  } finally {
+    submitting.value = false;
   }
-  showCreateDialog.value = false;
-  resetForm();
-  await loadData();
 };
 
 const openDetail = (row) => {

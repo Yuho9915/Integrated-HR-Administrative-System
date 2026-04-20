@@ -10,11 +10,67 @@ from app.utils.responses import ok
 router = APIRouter(prefix='/administration', tags=['administration'])
 
 
+ACTIVE_REQUEST_STATUSES = {'待审批', '待人事行政审批', '待经理审批', '已通过'}
+
+
 def _parse_datetime(value: str):
     try:
         return datetime.fromisoformat(str(value).replace(' ', 'T')) if value else None
     except ValueError:
         return None
+
+
+def _normalize_text(value) -> str:
+    return str(value or '').strip()
+
+
+def _ensure_no_duplicate_office_supply_request(repository, payload: OfficeSupplyRequestPayload):
+    duplicate = next((
+        row for row in repository.list('office_supply_requests')
+        if row.get('employee_no') == payload.employee_no
+        and row.get('item_name') == payload.item_name
+        and int(row.get('quantity') or 0) == int(payload.quantity)
+        and _normalize_text(row.get('needed_by')) == _normalize_text(payload.needed_by)
+        and _normalize_text(row.get('reason')) == _normalize_text(payload.reason)
+        and row.get('status') in ACTIVE_REQUEST_STATUSES
+    ), None)
+    if duplicate:
+        raise HTTPException(status_code=400, detail='请勿重复提交相同的办公用品申请')
+
+
+
+def _ensure_no_duplicate_asset_request(repository, payload: AssetRequestPayload):
+    duplicate = next((
+        row for row in repository.list('asset_requests')
+        if row.get('employee_no') == payload.employee_no
+        and row.get('request_type') == payload.request_type
+        and _normalize_text(row.get('asset_code')) == _normalize_text(payload.asset_code)
+        and int(row.get('quantity') or 0) == int(payload.quantity)
+        and _normalize_text(row.get('needed_by')) == _normalize_text(payload.needed_by)
+        and _normalize_text(row.get('reason')) == _normalize_text(payload.reason)
+        and row.get('status') in ACTIVE_REQUEST_STATUSES
+    ), None)
+    if duplicate:
+        raise HTTPException(status_code=400, detail='请勿重复提交相同的资产领用申请')
+
+
+
+def _ensure_no_duplicate_general_request(repository, payload: GeneralRequestPayload):
+    duplicate = next((
+        row for row in repository.list('general_requests')
+        if row.get('employee_no') == payload.employee_no
+        and row.get('request_type') == payload.request_type
+        and _normalize_text(row.get('resource_code')) == _normalize_text(payload.resource_code)
+        and _normalize_text(row.get('resource_name')) == _normalize_text(payload.resource_name)
+        and _normalize_text(row.get('title')) == _normalize_text(payload.title or payload.resource_name or payload.request_type)
+        and _normalize_text(row.get('start_at')) == _normalize_text(payload.start_at)
+        and _normalize_text(row.get('end_at')) == _normalize_text(payload.end_at)
+        and int(row.get('quantity') or 1) == int(payload.quantity or 1)
+        and _normalize_text(row.get('reason')) == _normalize_text(payload.reason)
+        and row.get('status') in ACTIVE_REQUEST_STATUSES
+    ), None)
+    if duplicate:
+        raise HTTPException(status_code=400, detail='请勿重复提交相同的申请')
 
 
 def _time_overlaps(start_at: str, end_at: str, other_start: str, other_end: str) -> bool:
@@ -51,7 +107,7 @@ def _validate_general_resource_conflict(repository, payload: GeneralRequestPaylo
 
 
 @router.get('/summary')
-def get_administration_summary(user=Depends(require_roles('employee', 'hr', 'boss'))):
+def get_administration_summary(user=Depends(require_roles('employee', 'hr'))):
     repository = get_repository()
     rows = repository.list('assets')
     return ok({
@@ -70,7 +126,7 @@ def create_asset(payload: AssetPayload, user=Depends(require_roles('hr'))):
 
 
 @router.get('/office-supply-requests')
-def get_office_supply_requests(user=Depends(require_roles('employee', 'hr', 'boss'))):
+def get_office_supply_requests(user=Depends(require_roles('employee', 'hr'))):
     repository = get_repository()
     rows = repository.list('office_supply_requests')
     if user['role'] == 'employee':
@@ -84,6 +140,7 @@ def get_office_supply_requests(user=Depends(require_roles('employee', 'hr', 'bos
 @router.post('/office-supply-requests')
 def create_office_supply_request(payload: OfficeSupplyRequestPayload, user=Depends(require_roles('employee'))):
     repository = get_repository()
+    _ensure_no_duplicate_office_supply_request(repository, payload)
     employee = next((item for item in repository.list('employees') if (item.get('employee_no') or item.get('employeeNo')) == payload.employee_no), None)
     applicant_name = employee.get('name') if employee else payload.employee_no
     applicant_department = employee.get('department') if employee else ''
@@ -131,7 +188,7 @@ def create_office_supply_request(payload: OfficeSupplyRequestPayload, user=Depen
 
 
 @router.get('/asset-requests')
-def get_asset_requests(user=Depends(require_roles('employee', 'hr', 'boss'))):
+def get_asset_requests(user=Depends(require_roles('employee', 'hr'))):
     repository = get_repository()
     rows = repository.list('asset_requests')
     if user['role'] == 'employee':
@@ -145,6 +202,7 @@ def get_asset_requests(user=Depends(require_roles('employee', 'hr', 'boss'))):
 @router.post('/asset-requests')
 def create_asset_request(payload: AssetRequestPayload, user=Depends(require_roles('employee'))):
     repository = get_repository()
+    _ensure_no_duplicate_asset_request(repository, payload)
     asset_rows = repository.list('assets')
     asset_row = next((item for item in asset_rows if item.get('code') == payload.asset_code or item.get('asset') == payload.asset_name or item.get('name') == payload.asset_name), None)
     if not asset_row:
@@ -206,7 +264,7 @@ def create_asset_request(payload: AssetRequestPayload, user=Depends(require_role
 
 
 @router.get('/general-requests')
-def get_general_requests(user=Depends(require_roles('employee', 'hr', 'boss', 'manager'))):
+def get_general_requests(user=Depends(require_roles('employee', 'hr', 'manager'))):
     repository = get_repository()
     rows = repository.list('general_requests')
     if user['role'] == 'employee':
@@ -220,6 +278,7 @@ def get_general_requests(user=Depends(require_roles('employee', 'hr', 'boss', 'm
 @router.post('/general-requests')
 def create_general_request(payload: GeneralRequestPayload, user=Depends(require_roles('employee'))):
     repository = get_repository()
+    _ensure_no_duplicate_general_request(repository, payload)
     _validate_general_resource_conflict(repository, payload)
     employee = next((item for item in repository.list('employees') if (item.get('employee_no') or item.get('employeeNo')) == payload.employee_no), None)
     applicant_name = employee.get('name') if employee else payload.employee_no
@@ -244,14 +303,14 @@ def create_general_request(payload: GeneralRequestPayload, user=Depends(require_
         '转正申请': 'hr',
         '调岗申请': 'manager',
         '离职申请': 'hr',
-        '薪酬异动': 'boss',
+        '薪酬异动': 'hr',
         '加班申请': 'manager',
     }
     chain_map = {
-        '转正申请': ['hr', 'boss'],
+        '转正申请': ['hr'],
         '调岗申请': ['manager', 'hr'],
         '离职申请': ['manager', 'hr'],
-        '薪酬异动': ['manager', 'boss'],
+        '薪酬异动': ['manager', 'hr'],
         '加班申请': ['manager', 'hr'],
     }
 
@@ -297,7 +356,7 @@ def create_general_request(payload: GeneralRequestPayload, user=Depends(require_
         'level': current_level,
         'approval_chain': approval_chain,
         'current_step': 0,
-        'assigned_to': 'admin.hr' if current_level in {'人事行政', 'hr'} else 'manager' if current_level == 'manager' else 'boss',
+        'assigned_to': 'admin.hr' if current_level in {'人事行政', 'hr'} else 'manager',
         'source_id': document['id'],
         'apply_time': document.get('created_at'),
         'reason': payload.reason,

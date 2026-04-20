@@ -7,7 +7,7 @@ export const getCurrentUser = () => request.get('/auth/me');
 export const verifyPasswordApi = (payload) => request.post('/auth/verify-password', payload);
 
 export const getDashboardSummary = () => request.get('/dashboard/summary');
-export const getAttendanceOverview = () => request.get('/attendance/overview');
+export const getAttendanceOverview = (config = {}) => request.get('/attendance/overview', config);
 export const generateAttendanceSummaryReport = (payload) => request.post('/attendance/ai/generate-summary-report', payload);
 export const parseAttendanceFile = (formData) => request.post('/attendance/import/parse', formData, {
   headers: { 'Content-Type': 'multipart/form-data' },
@@ -54,7 +54,6 @@ export const parsePerformanceImport = (formData, params) => request.post('/perfo
 export const confirmPerformanceImport = (payload) => request.post('/performance/import/confirm', payload);
 export const exportPerformance = (params) => request.get('/performance/export', { params });
 export const checkPerformance = (payload) => request.post('/performance/check', payload);
-export const generatePerformanceIndicators = (payload) => request.post('/performance/ai/generate-indicators', payload);
 export const autoScorePerformance = (payload) => request.post('/performance/ai/auto-score', payload);
 export const generatePerformanceComment = (payload) => request.post('/performance/ai/generate-comment', payload);
 export const diagnosePerformance = (payload) => request.post('/performance/ai/diagnose', payload);

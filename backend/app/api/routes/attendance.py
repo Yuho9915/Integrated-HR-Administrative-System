@@ -113,19 +113,24 @@ def _attendance_summary_snapshot(rows: list[dict], department: str = '') -> tupl
 
 
 @router.get('/overview')
-async def get_attendance_overview(user=Depends(require_roles('employee', 'manager', 'hr', 'boss'))):
+async def get_attendance_overview(user=Depends(require_roles('employee', 'manager', 'hr'))):
     repository = get_repository()
     rows = repository.list('attendance')
-    ai = await ai_service.attendance_summary(rows)
+    department_rows, department_summary = _attendance_summary_snapshot(rows)
     return ok({
         'records': rows,
+        'overview': department_rows,
+        'departments': department_rows,
         'summary': {
             'imported_records': len(rows),
             'abnormal_records': len([item for item in rows if item.get('status') != '正常']),
             'leave_requests': len(repository.list('leaves')),
             'overtime_hours': round(sum(float(item.get('workHours', 0)) - 8 for item in rows if float(item.get('workHours', 0)) > 8), 2),
+            **department_summary,
         },
-        'ai': ai,
+        'ai': {
+            'summary': '考勤总览接口已切换为快速返回模式，AI 汇总请通过单独报表接口生成。',
+        },
     })
 
 
